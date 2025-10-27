@@ -307,7 +307,8 @@ function App() {
         <ApiProvider>
           <AuthDebug />
           <Routes>
-            <Route path="/callback" element={<OAuthCallback />} />
+            <Route path="/auth/github/callback" element={<OAuthCallback />} />
+            <Route path="/callback" element={<OAuthCallback />} /> {/* Keep old path for backward compatibility */}
             <Route path="/" element={<MainApp />} />
           </Routes>
         </ApiProvider>

@@ -18,10 +18,6 @@ const ViewToggle = styled.div`
   border-radius: 6px;
   border: 1px solid #d0d7de;
 
-  @media (min-width: 769px) {
-    display: none;
-  }
-
   @media (max-width: 480px) {
     gap: 4px;
     margin-bottom: 12px;
@@ -130,6 +126,7 @@ interface ResponsiveNetworkViewProps {
 
 export const ResponsiveNetworkView: React.FC<ResponsiveNetworkViewProps> = ({ networkData }) => {
   const [mobileView, setMobileView] = useState<'graph' | 'list'>('list');
+  const [desktopView, setDesktopView] = useState<'graph' | 'list'>('graph');
   const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
@@ -170,25 +167,27 @@ export const ResponsiveNetworkView: React.FC<ResponsiveNetworkViewProps> = ({ ne
         </StatItem>
       </NetworkStats>
 
-      {isMobile && (
-        <ViewToggle>
-          <ToggleButton
-            active={mobileView === 'list'}
-            onClick={() => setMobileView('list')}
-          >
-            List View
-          </ToggleButton>
-          <ToggleButton
-            active={mobileView === 'graph'}
-            onClick={() => setMobileView('graph')}
-          >
-            Graph View
-          </ToggleButton>
-        </ViewToggle>
-      )}
+      <ViewToggle>
+        <ToggleButton
+          active={isMobile ? mobileView === 'list' : desktopView === 'list'}
+          onClick={() => isMobile ? setMobileView('list') : setDesktopView('list')}
+        >
+          List View
+        </ToggleButton>
+        <ToggleButton
+          active={isMobile ? mobileView === 'graph' : desktopView === 'graph'}
+          onClick={() => isMobile ? setMobileView('graph') : setDesktopView('graph')}
+        >
+          Graph View
+        </ToggleButton>
+      </ViewToggle>
 
       <DesktopView>
-        <NetworkVisualization networkData={networkData} />
+        {desktopView === 'list' ? (
+          <MobileNetworkView networkData={networkData} />
+        ) : (
+          <NetworkVisualization networkData={networkData} />
+        )}
       </DesktopView>
 
       <MobileViewContainer>

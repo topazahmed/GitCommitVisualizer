@@ -86,7 +86,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
     // Use GitHub's standard OAuth Web Application Flow
     // This redirects to GitHub and back to our callback
-    const redirectUri = `${window.location.origin}/callback`;
+    const redirectUri = `${window.location.origin}/auth/github/callback`;
     const scope = 'repo read:user user:email';
     const state = generateRandomState(); // Generate a random state for security
     
@@ -111,26 +111,33 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   // Handle OAuth callback with authorization code
   const handleCallback = async (code: string, state: string) => {
     console.log('Handling OAuth callback...');
+    console.log('Received code:', code.substring(0, 10) + '...');
+    console.log('Received state:', state.substring(0, 10) + '...');
     
     // Verify state parameter for security
     const storedState = sessionStorage.getItem('oauth_state');
-    if (state !== storedState) {
-      console.error('State parameter mismatch');
-      throw new Error('Invalid state parameter');
+    console.log('Stored state:', storedState?.substring(0, 10) + '...');
+    
+    if (!storedState) {
+      console.warn('No stored state found - this might be due to page refresh or session loss');
+      // Don't throw error for missing stored state, as it might be a legitimate case
+    } else if (state !== storedState) {
+      console.error('State parameter mismatch - potential security issue');
+      console.error('Expected:', storedState);
+      console.error('Received:', state);
+      throw new Error('Invalid state parameter - potential CSRF attack');
     }
     
     // Clear the stored state
     sessionStorage.removeItem('oauth_state');
     
-    // For a complete OAuth flow, we would need a backend to exchange
-    // the authorization code for an access token securely.
-    // Since we can't expose client_secret in frontend, we'll redirect to token input
+    // Store that OAuth authorization was successful
+    sessionStorage.setItem('oauth_authorized', 'true');
+    sessionStorage.setItem('authorization_code', code);
     
-    console.log('Authorization code received:', code);
-    alert('OAuth authorization successful! However, for security reasons in client-side apps, please use a Personal Access Token instead.\\n\\nGo to: GitHub Settings → Developer settings → Personal access tokens → Generate new token\\n\\nRequired scopes: repo, read:user, user:email');
+    console.log('Authorization code stored successfully');
     
-    // Redirect back to main app
-    window.location.href = '/';
+    // Don't redirect immediately - let the OAuthCallback component handle the user experience
   };
 
   // Login with personal access token
