@@ -1,0 +1,30 @@
+{
+  "name": "github-network-visualizer",
+  "version": 2,
+  "builds": [
+    {
+      "src": "package.json",
+      "use": "@vercel/static-build",
+      "config": {
+        "distDir": "build"
+      }
+    }
+  ],
+  "routes": [
+    {
+      "src": "/static/(.*)",
+      "headers": {
+        "cache-control": "s-maxage=31536000,immutable"
+      },
+      "dest": "/static/$1"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/index.html"
+    }
+  ],
+  "env": {
+    "REACT_APP_GITHUB_CLIENT_ID": "@github-client-id",
+    "REACT_APP_GITHUB_CLIENT_SECRET": "@github-client-secret"
+  }
+}
