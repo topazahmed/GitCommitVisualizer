@@ -9,6 +9,11 @@ const MobileContainer = styled.div`
   overflow-y: auto;
   border: 1px solid #d0d7de;
   border-radius: 6px;
+
+  @media (max-width: 480px) {
+    max-height: 500px;
+    border-radius: 4px;
+  }
 `;
 
 const BranchSelector = styled.div`
@@ -18,6 +23,27 @@ const BranchSelector = styled.div`
   background: #f6f8fa;
   border-bottom: 1px solid #d0d7de;
   overflow-x: auto;
+  scrollbar-width: thin;
+
+  /* Hide scrollbar for webkit browsers */
+  &::-webkit-scrollbar {
+    height: 4px;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: #c1c8cd;
+    border-radius: 2px;
+  }
+
+  @media (max-width: 768px) {
+    padding: 12px;
+    gap: 6px;
+  }
+
+  @media (max-width: 480px) {
+    padding: 10px;
+    gap: 4px;
+  }
 `;
 
 const BranchTab = styled.button<{ active: boolean }>`
@@ -30,14 +56,35 @@ const BranchTab = styled.button<{ active: boolean }>`
   cursor: pointer;
   white-space: nowrap;
   transition: all 0.2s;
+  min-height: 44px; /* Touch-friendly */
+  flex-shrink: 0;
 
   &:hover {
     background: ${props => props.active ? '#0860ca' : '#f3f4f6'};
+  }
+
+  @media (max-width: 768px) {
+    padding: 10px 14px;
+    font-size: 14px;
+  }
+
+  @media (max-width: 480px) {
+    padding: 8px 12px;
+    font-size: 13px;
+    border-radius: 4px;
   }
 `;
 
 const CommitList = styled.div`
   padding: 16px;
+
+  @media (max-width: 768px) {
+    padding: 12px;
+  }
+
+  @media (max-width: 480px) {
+    padding: 10px;
+  }
 `;
 
 const CommitItem = styled.div`
@@ -50,6 +97,18 @@ const CommitItem = styled.div`
   &:last-child {
     border-bottom: none;
   }
+
+  @media (max-width: 768px) {
+    gap: 10px;
+    padding: 10px 0;
+  }
+
+  @media (max-width: 480px) {
+    gap: 8px;
+    padding: 8px 0;
+    flex-direction: column;
+    align-items: stretch;
+  }
 `;
 
 const CommitDot = styled.div<{ color: string }>`
@@ -61,11 +120,19 @@ const CommitDot = styled.div<{ color: string }>`
   box-shadow: 0 0 0 2px ${props => props.color};
   margin-top: 4px;
   flex-shrink: 0;
+
+  @media (max-width: 480px) {
+    display: none; /* Hide dot on very small screens to save space */
+  }
 `;
 
 const CommitContent = styled.div`
   flex: 1;
   min-width: 0;
+
+  @media (max-width: 480px) {
+    width: 100%;
+  }
 `;
 
 const CommitMessage = styled.div`
@@ -74,6 +141,15 @@ const CommitMessage = styled.div`
   margin-bottom: 4px;
   word-wrap: break-word;
   line-height: 1.4;
+
+  @media (max-width: 768px) {
+    font-size: 14px;
+  }
+
+  @media (max-width: 480px) {
+    font-size: 13px;
+    margin-bottom: 6px;
+  }
 `;
 
 const CommitMeta = styled.div`
@@ -82,12 +158,26 @@ const CommitMeta = styled.div`
   gap: 4px;
   font-size: 12px;
   color: #656d76;
+
+  @media (max-width: 768px) {
+    font-size: 11px;
+  }
+
+  @media (max-width: 480px) {
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
 `;
 
 const CommitAuthor = styled.div`
   display: flex;
   align-items: center;
   gap: 6px;
+
+  @media (max-width: 480px) {
+    gap: 4px;
+  }
 `;
 
 const AuthorAvatar = styled.img`

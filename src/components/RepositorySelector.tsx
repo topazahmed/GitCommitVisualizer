@@ -19,11 +19,21 @@ const SearchInput = styled.input`
   border-radius: 6px;
   font-size: 16px;
   background: white;
+  min-height: 44px; /* Touch-friendly */
   
   &:focus {
     outline: 2px solid #0969da;
     outline-offset: 2px;
     border-color: #0969da;
+  }
+
+  @media (max-width: 768px) {
+    padding: 14px 16px;
+  }
+
+  @media (max-width: 480px) {
+    padding: 12px 14px;
+    font-size: 16px; /* Prevent zoom on iOS */
   }
 `;
 
@@ -32,6 +42,14 @@ const FilterContainer = styled.div`
   gap: 12px;
   margin-bottom: 20px;
   flex-wrap: wrap;
+
+  @media (max-width: 768px) {
+    gap: 8px;
+  }
+
+  @media (max-width: 480px) {
+    gap: 6px;
+  }
 `;
 
 const FilterButton = styled.button<{ active: boolean }>`
@@ -43,9 +61,23 @@ const FilterButton = styled.button<{ active: boolean }>`
   cursor: pointer;
   font-size: 14px;
   transition: all 0.2s;
+  min-height: 44px; /* Touch-friendly */
+  white-space: nowrap;
 
   &:hover {
     background: ${props => props.active ? '#0860ca' : '#f3f4f6'};
+  }
+
+  @media (max-width: 768px) {
+    padding: 10px 14px;
+    font-size: 14px;
+  }
+
+  @media (max-width: 480px) {
+    padding: 8px 12px;
+    font-size: 13px;
+    flex: 1;
+    min-width: 0;
   }
 `;
 
@@ -56,6 +88,11 @@ const RepositoryGrid = styled.div`
 
   @media (max-width: 768px) {
     grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  @media (max-width: 480px) {
+    gap: 10px;
   }
 `;
 
@@ -70,6 +107,19 @@ const RepositoryCard = styled.div`
   &:hover {
     border-color: #0969da;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    transform: translateY(-1px);
+  }
+
+  &:active {
+    transform: translateY(0);
+  }
+
+  @media (max-width: 768px) {
+    padding: 14px;
+  }
+
+  @media (max-width: 480px) {
+    padding: 12px;
   }
 `;
 
@@ -78,12 +128,22 @@ const RepoHeader = styled.div`
   align-items: center;
   gap: 12px;
   margin-bottom: 8px;
+
+  @media (max-width: 480px) {
+    gap: 10px;
+  }
 `;
 
 const RepoAvatar = styled.img`
   width: 20px;
   height: 20px;
   border-radius: 50%;
+  flex-shrink: 0;
+
+  @media (max-width: 480px) {
+    width: 18px;
+    height: 18px;
+  }
 `;
 
 const RepoName = styled.h3`
@@ -91,6 +151,16 @@ const RepoName = styled.h3`
   font-size: 16px;
   color: #0969da;
   font-weight: 600;
+  word-break: break-word;
+  overflow-wrap: break-word;
+
+  @media (max-width: 768px) {
+    font-size: 15px;
+  }
+
+  @media (max-width: 480px) {
+    font-size: 14px;
+  }
 `;
 
 const RepoDescription = styled.p`
@@ -98,6 +168,22 @@ const RepoDescription = styled.p`
   color: #656d76;
   font-size: 14px;
   line-height: 1.4;
+  word-break: break-word;
+  overflow-wrap: break-word;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+
+  @media (max-width: 768px) {
+    font-size: 13px;
+    -webkit-line-clamp: 2;
+  }
+
+  @media (max-width: 480px) {
+    font-size: 12px;
+    margin: 6px 0;
+  }
 `;
 
 const RepoMeta = styled.div`
@@ -107,6 +193,16 @@ const RepoMeta = styled.div`
   font-size: 12px;
   color: #656d76;
   margin-top: 12px;
+
+  @media (max-width: 768px) {
+    gap: 12px;
+  }
+
+  @media (max-width: 480px) {
+    gap: 8px;
+    font-size: 11px;
+    margin-top: 8px;
+  }
 `;
 
 const MetaItem = styled.div`

@@ -23,9 +23,20 @@ const Header = styled.header`
   justify-content: space-between;
   align-items: center;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  position: sticky;
+  top: 0;
+  z-index: 100;
 
   @media (max-width: 768px) {
     padding: 12px 16px;
+    flex-direction: column;
+    gap: 12px;
+    text-align: center;
+  }
+
+  @media (max-width: 480px) {
+    padding: 10px 12px;
+    gap: 8px;
   }
 `;
 
@@ -36,6 +47,11 @@ const Logo = styled.h1`
   
   @media (max-width: 768px) {
     font-size: 18px;
+    order: 1;
+  }
+  
+  @media (max-width: 480px) {
+    font-size: 16px;
   }
 `;
 
@@ -43,9 +59,16 @@ const Main = styled.main`
   max-width: 1200px;
   margin: 0 auto;
   padding: 24px;
+  min-height: calc(100vh - 80px);
 
   @media (max-width: 768px) {
     padding: 16px;
+    min-height: calc(100vh - 120px);
+  }
+  
+  @media (max-width: 480px) {
+    padding: 12px;
+    min-height: calc(100vh - 100px);
   }
 `;
 
@@ -79,46 +102,104 @@ const SelectedRepoHeader = styled.div`
   align-items: center;
   flex-wrap: wrap;
   gap: 12px;
+
+  @media (max-width: 768px) {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 12px;
+    gap: 16px;
+  }
+
+  @media (max-width: 480px) {
+    padding: 10px;
+  }
 `;
 
 const RepoInfo = styled.div`
   display: flex;
   align-items: center;
   gap: 12px;
+  flex: 1;
+  min-width: 0; /* Allow text truncation */
+
+  @media (max-width: 768px) {
+    width: 100%;
+  }
 `;
 
 const RepoAvatar = styled.img`
   width: 32px;
   height: 32px;
   border-radius: 50%;
+  flex-shrink: 0;
+
+  @media (max-width: 480px) {
+    width: 28px;
+    height: 28px;
+  }
 `;
 
-const RepoDetails = styled.div``;
+const RepoDetails = styled.div`
+  min-width: 0; /* Allow text truncation */
+  flex: 1;
+`;
 
 const RepoName = styled.h2`
   margin: 0;
   font-size: 18px;
   color: #24292f;
+  word-break: break-word;
+
+  @media (max-width: 768px) {
+    font-size: 16px;
+  }
+
+  @media (max-width: 480px) {
+    font-size: 14px;
+  }
 `;
 
 const RepoDescription = styled.p`
   margin: 4px 0 0 0;
   color: #656d76;
   font-size: 14px;
+  word-break: break-word;
+  overflow-wrap: break-word;
+
+  @media (max-width: 768px) {
+    font-size: 13px;
+  }
+
+  @media (max-width: 480px) {
+    font-size: 12px;
+  }
 `;
 
 const BackButton = styled.button`
   background: white;
   color: #24292f;
   border: 1px solid #d0d7de;
-  padding: 6px 12px;
+  padding: 8px 16px;
   border-radius: 6px;
   cursor: pointer;
   font-size: 14px;
   transition: all 0.2s;
+  white-space: nowrap;
+  min-height: 44px; /* Touch-friendly */
 
   &:hover {
     background: #f3f4f6;
+  }
+
+  @media (max-width: 768px) {
+    width: 100%;
+    justify-self: stretch;
+    font-size: 16px;
+  }
+
+  @media (max-width: 480px) {
+    padding: 10px 14px;
+    font-size: 14px;
   }
 `;
 

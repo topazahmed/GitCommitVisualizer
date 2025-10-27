@@ -21,6 +21,12 @@ const ViewToggle = styled.div`
   @media (min-width: 769px) {
     display: none;
   }
+
+  @media (max-width: 480px) {
+    gap: 4px;
+    margin-bottom: 12px;
+    padding: 3px;
+  }
 `;
 
 const ToggleButton = styled.button<{ active: boolean }>`
@@ -34,9 +40,15 @@ const ToggleButton = styled.button<{ active: boolean }>`
   cursor: pointer;
   transition: all 0.2s;
   box-shadow: ${props => props.active ? '0 1px 3px rgba(0, 0, 0, 0.1)' : 'none'};
+  min-height: 44px; /* Touch-friendly */
 
   &:hover {
     background: ${props => props.active ? 'white' : 'rgba(255, 255, 255, 0.5)'};
+  }
+
+  @media (max-width: 480px) {
+    padding: 10px 12px;
+    font-size: 13px;
   }
 `;
 
@@ -61,10 +73,27 @@ const NetworkStats = styled.div`
   background: #f6f8fa;
   border-radius: 6px;
   border: 1px solid #d0d7de;
+
+  @media (max-width: 768px) {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+    padding: 12px;
+    margin-bottom: 16px;
+  }
+
+  @media (max-width: 480px) {
+    gap: 8px;
+    padding: 10px;
+    margin-bottom: 12px;
+  }
 `;
 
 const StatItem = styled.div`
   text-align: center;
+
+  @media (max-width: 480px) {
+    padding: 4px;
+  }
 `;
 
 const StatValue = styled.div`
@@ -72,6 +101,15 @@ const StatValue = styled.div`
   font-weight: 600;
   color: #24292f;
   margin-bottom: 4px;
+
+  @media (max-width: 768px) {
+    font-size: 20px;
+  }
+
+  @media (max-width: 480px) {
+    font-size: 18px;
+    margin-bottom: 2px;
+  }
 `;
 
 const StatLabel = styled.div`
@@ -79,6 +117,11 @@ const StatLabel = styled.div`
   color: #656d76;
   text-transform: uppercase;
   letter-spacing: 0.5px;
+
+  @media (max-width: 480px) {
+    font-size: 11px;
+    letter-spacing: 0.3px;
+  }
 `;
 
 interface ResponsiveNetworkViewProps {

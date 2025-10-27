@@ -15,6 +15,15 @@ const LoginContainer = styled.div`
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
   text-align: center;
+  padding: 20px;
+
+  @media (max-width: 768px) {
+    padding: 16px;
+  }
+
+  @media (max-width: 480px) {
+    padding: 12px;
+  }
 `;
 
 const LoginButton = styled.button`
@@ -27,9 +36,23 @@ const LoginButton = styled.button`
   cursor: pointer;
   margin-top: 20px;
   transition: background 0.2s;
+  min-height: 44px; /* Touch-friendly */
+  min-width: 120px;
 
   &:hover {
     background: #555;
+  }
+
+  @media (max-width: 768px) {
+    padding: 14px 20px;
+    font-size: 16px;
+    width: 100%;
+    max-width: 300px;
+  }
+
+  @media (max-width: 480px) {
+    padding: 12px 16px;
+    font-size: 15px;
   }
 `;
 
@@ -41,12 +64,30 @@ const UserInfo = styled.div`
   padding: 8px 16px;
   border-radius: 6px;
   border: 1px solid #d0d7de;
+
+  @media (max-width: 768px) {
+    flex-direction: column;
+    gap: 8px;
+    padding: 12px;
+    text-align: center;
+    order: 2;
+  }
+
+  @media (max-width: 480px) {
+    padding: 10px;
+    gap: 6px;
+  }
 `;
 
 const Avatar = styled.img`
   width: 32px;
   height: 32px;
   border-radius: 50%;
+
+  @media (max-width: 480px) {
+    width: 28px;
+    height: 28px;
+  }
 `;
 
 const LogoutButton = styled.button`
