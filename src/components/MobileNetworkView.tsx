@@ -1,7 +1,7 @@
 // Mobile-friendly network view component
 import React, { useState } from 'react';
 import styled from 'styled-components';
-import { NetworkData, Commit, Branch } from '../services/GitHubApiClient';
+import { NetworkData, Commit } from '../services/GitHubApiClient';
 
 const MobileContainer = styled.div`
   width: 100%;

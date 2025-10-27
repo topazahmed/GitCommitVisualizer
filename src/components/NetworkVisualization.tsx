@@ -2,7 +2,7 @@
 import React, { useRef, useEffect, useState } from 'react';
 import * as d3 from 'd3';
 import styled from 'styled-components';
-import { NetworkData, Commit, Branch } from '../services/GitHubApiClient';
+import { NetworkData, Commit } from '../services/GitHubApiClient';
 
 const NetworkContainer = styled.div`
   width: 100%;

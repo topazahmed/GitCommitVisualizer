@@ -1,5 +1,4 @@
 {
-  "name": "github-network-visualizer",
   "version": 2,
   "builds": [
     {
@@ -22,9 +21,5 @@
       "src": "/(.*)",
       "dest": "/index.html"
     }
-  ],
-  "env": {
-    "REACT_APP_GITHUB_CLIENT_ID": "@github-client-id",
-    "REACT_APP_GITHUB_CLIENT_SECRET": "@github-client-secret"
-  }
+  ]
 }

@@ -1,14 +1,63 @@
 // OAuth callback handler component
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import styled from 'styled-components';
+
+const Container = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 20px;
+  text-align: center;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+`;
+
+const Message = styled.div`
+  font-size: 18px;
+  margin-bottom: 20px;
+  max-width: 600px;
+  line-height: 1.5;
+`;
+
+const Button = styled.button`
+  background: #333;
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 6px;
+  font-size: 16px;
+  cursor: pointer;
+  margin: 10px;
+  transition: background 0.2s;
+  min-height: 44px;
+
+  &:hover {
+    background: #555;
+  }
+`;
+
+const InfoBox = styled.div`
+  background: rgba(255, 255, 255, 0.1);
+  padding: 16px;
+  border-radius: 8px;
+  margin: 20px 0;
+  font-size: 14px;
+  line-height: 1.5;
+  max-width: 500px;
+`;
 
 const OAuthCallback: React.FC = () => {
   const navigate = useNavigate();
-  const { setUser, setOctokit } = useAuth();
+  const { handleCallback } = useAuth();
+  const [status, setStatus] = useState<'processing' | 'success' | 'error'>('processing');
+  const [message, setMessage] = useState('Processing GitHub authorization...');
 
   useEffect(() => {
-    const handleCallback = async () => {
+    const processCallback = async () => {
       try {
         const urlParams = new URLSearchParams(window.location.search);
         const code = urlParams.get('code');
@@ -20,132 +69,75 @@ const OAuthCallback: React.FC = () => {
 
         // Check for errors first
         if (error) {
-          const message = errorDescription || error;
-          console.error('OAuth error:', message);
-          alert(`GitHub authentication failed: ${message}`);
-          navigate('/');
+          const errorMsg = errorDescription || error;
+          console.error('OAuth error:', errorMsg);
+          setStatus('error');
+          setMessage(`GitHub authentication failed: ${errorMsg}`);
           return;
         }
 
-        // Verify state matches
-        const savedState = localStorage.getItem('oauth_state');
-        if (state !== savedState) {
-          console.error('State mismatch - possible CSRF attack');
-          alert('Authentication failed: Invalid state parameter');
-          navigate('/');
+        if (!code || !state) {
+          console.error('Missing code or state parameter');
+          setStatus('error');
+          setMessage('Authentication failed: Missing required parameters');
           return;
         }
 
-        if (!code) {
-          console.error('No authorization code received');
-          alert('Authentication failed: No authorization code received');
-          navigate('/');
-          return;
-        }
-
-        console.log('Exchanging authorization code for access token...');
-
-        // Exchange authorization code for access token
-        // We'll use a proxy service or GitHub's CORS-enabled endpoint
-        const clientId = process.env.REACT_APP_GITHUB_CLIENT_ID;
-        const clientSecret = process.env.REACT_APP_GITHUB_CLIENT_SECRET;
-
-        if (!clientId || !clientSecret) {
-          throw new Error('GitHub OAuth credentials not configured');
-        }
-
-        // Option 1: Try GitHub's CORS-enabled endpoint (if available)
-        // Option 2: Use a public CORS proxy (not recommended for production)
-        // Option 3: Use GitHub's device flow (which we already implemented)
+        // Use the new handleCallback method from AuthContext
+        await handleCallback(code, state);
         
-        // For now, let's try the GitHub API directly with a CORS workaround
-        const tokenResponse = await fetch('https://github.com/login/oauth/access_token', {
-          method: 'POST',
-          headers: {
-            'Accept': 'application/json',
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            client_id: clientId,
-            client_secret: clientSecret,
-            code: code,
-            state: state,
-          }),
-        });
-
-        if (!tokenResponse.ok) {
-          throw new Error(`Token exchange failed: ${tokenResponse.status}`);
-        }
-
-        const tokenData = await tokenResponse.json();
-        console.log('Token exchange response:', tokenData);
-
-        if (tokenData.access_token) {
-          // Store the token and initialize auth
-          localStorage.setItem('github_token', tokenData.access_token);
-          localStorage.removeItem('oauth_state');
-
-          // Initialize Octokit and get user data
-          const { Octokit } = await import('@octokit/rest');
-          const octokitInstance = new Octokit({ auth: tokenData.access_token });
-          setOctokit(octokitInstance);
-
-          const userResponse = await octokitInstance.rest.users.getAuthenticated();
-          setUser(userResponse.data as any);
-
-          console.log('Successfully authenticated user:', userResponse.data.login);
-          navigate('/');
-        } else {
-          throw new Error('No access token received from GitHub');
-        }
+        setStatus('success');
+        setMessage('GitHub authorization received successfully!');
 
       } catch (error) {
-        console.error('OAuth callback error:', error);
-        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-        
-        // If the standard OAuth flow fails due to CORS, suggest alternatives
-        if (errorMessage.includes('CORS') || errorMessage.includes('Failed to fetch')) {
-          alert('OAuth flow blocked by CORS policy. Redirecting to device flow authentication...');
-          // Redirect back to login with device flow
-          navigate('/?use_device_flow=true');
-        } else {
-          alert(`Authentication failed: ${errorMessage}`);
-          navigate('/');
-        }
+        console.error('Callback processing error:', error);
+        setStatus('error');
+        setMessage(`Authentication failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
       }
     };
 
-    handleCallback();
-  }, [navigate, setUser, setOctokit]);
+    processCallback();
+  }, [handleCallback]);
+
+  const handleContinue = () => {
+    navigate('/');
+  };
 
   return (
-    <div style={{ 
-      display: 'flex', 
-      justifyContent: 'center', 
-      alignItems: 'center', 
-      height: '100vh',
-      fontFamily: 'Arial, sans-serif'
-    }}>
-      <div style={{ textAlign: 'center' }}>
-        <h2>Processing GitHub Authentication...</h2>
-        <p>Please wait while we complete the login process.</p>
-        <div style={{ 
-          margin: '20px auto',
-          width: '40px',
-          height: '40px',
-          border: '4px solid #f3f3f3',
-          borderTop: '4px solid #0366d6',
-          borderRadius: '50%',
-          animation: 'spin 1s linear infinite'
-        }} />
-        <style>{`
-          @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-          }
-        `}</style>
-      </div>
-    </div>
+    <Container>
+      <Message>{message}</Message>
+      
+      {status === 'success' && (
+        <>
+          <InfoBox>
+            <strong>Next Step: Use Personal Access Token</strong>
+            <br /><br />
+            For security in client-side applications, we recommend using Personal Access Tokens:
+            <br /><br />
+            1. Go to GitHub Settings → Developer settings → Personal access tokens
+            <br />
+            2. Click "Generate new token (classic)"
+            <br />
+            3. Select scopes: <code>repo</code>, <code>read:user</code>, <code>user:email</code>
+            <br />
+            4. Copy the token and paste it in the app
+          </InfoBox>
+          <Button onClick={handleContinue}>
+            Continue to App
+          </Button>
+        </>
+      )}
+      
+      {status === 'error' && (
+        <Button onClick={handleContinue}>
+          Back to App
+        </Button>
+      )}
+      
+      {status === 'processing' && (
+        <div>⏳ Please wait...</div>
+      )}
+    </Container>
   );
 };
 

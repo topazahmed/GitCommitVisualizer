@@ -10022,3 +10022,5 @@ git-network-app/node_modules/faye-websocket/lib/faye/websocket/api/event_target.
 git-network-app/node_modules/faye-websocket/lib/faye/websocket/api/event.js
 git-network-app/node_modules/fb-watchman/README.md
 .env
+
+.vercel

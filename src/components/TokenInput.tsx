@@ -1,7 +1,7 @@
 // Temporary solution: Manual token input for development
 import React, { useState } from 'react';
 import styled from 'styled-components';
-import { useAuth } from '../contexts/AuthContext';
+// import { useAuth } from '../contexts/AuthContext'; // Currently unused but may be needed for future functionality
 
 const Container = styled.div`
   display: flex;
@@ -100,7 +100,7 @@ interface TokenInputProps {
 export const TokenInput: React.FC<TokenInputProps> = ({ onBack }) => {
   const [token, setToken] = useState('');
   const [loading, setLoading] = useState(false);
-  const { logout } = useAuth();
+  // const { logout } = useAuth(); // Currently unused but may be needed for future functionality
 
   const handleSubmit = async () => {
     if (!token.trim()) return;

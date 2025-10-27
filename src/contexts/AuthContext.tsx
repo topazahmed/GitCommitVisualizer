@@ -17,6 +17,8 @@ interface AuthContextType {
   isLoading: boolean;
   setUser: (user: User | null) => void;
   setOctokit: (octokit: Octokit | null) => void;
+  handleCallback: (code: string, state: string) => Promise<void>;
+  loginWithToken: (token: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -43,7 +45,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     // Check if user is already authenticated
     const token = localStorage.getItem('github_token');
     console.log('AuthProvider: Token found:', !!token);
-    console.log('AuthProvider: Token value:', token ? token.substring(0, 10) + '...' : 'null');
     
     if (token) {
       console.log('AuthProvider: Creating Octokit instance...');
@@ -76,140 +77,92 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     const clientId = process.env.REACT_APP_GITHUB_CLIENT_ID;
     console.log('Starting GitHub OAuth login...');
     console.log('Client ID:', clientId ? 'Configured' : 'Missing');
-    console.log('Raw Client ID:', clientId);
     
     if (!clientId) {
       console.error('GitHub Client ID not configured');
-      alert('GitHub Client ID not configured. Please check your .env file.');
+      alert('GitHub Client ID not configured. Please check your environment variables.');
       return;
     }
 
-    // Use GitHub's Device Flow for client-side authentication
-    // This is the recommended approach for desktop/mobile apps
-    initiateDeviceFlow(clientId);
+    // Use GitHub's standard OAuth Web Application Flow
+    // This redirects to GitHub and back to our callback
+    const redirectUri = `${window.location.origin}/callback`;
+    const scope = 'repo read:user user:email';
+    const state = generateRandomState(); // Generate a random state for security
+    
+    // Store state in sessionStorage for verification
+    sessionStorage.setItem('oauth_state', state);
+    
+    const authUrl = `https://github.com/login/oauth/authorize?` +
+      `client_id=${encodeURIComponent(clientId)}&` +
+      `redirect_uri=${encodeURIComponent(redirectUri)}&` +
+      `scope=${encodeURIComponent(scope)}&` +
+      `state=${encodeURIComponent(state)}`;
+    
+    console.log('Redirecting to:', authUrl);
+    window.location.href = authUrl;
   };
 
-  const initiateDeviceFlow = async (clientId: string) => {
-    try {
-      console.log('Starting GitHub Device Flow...');
-      
-      // Step 1: Request device and user codes
-      const deviceResponse = await fetch('https://github.com/login/device/code', {
-        method: 'POST',
-        headers: {
-          'Accept': 'application/json',
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          client_id: clientId,
-          scope: 'repo read:user user:email'
-        }),
-      });
+  const generateRandomState = (): string => {
+    return Math.random().toString(36).substring(2, 15) + 
+           Math.random().toString(36).substring(2, 15);
+  };
 
-      if (!deviceResponse.ok) {
-        throw new Error(`Device flow request failed: ${deviceResponse.status}`);
-      }
-
-      const deviceData = await deviceResponse.json();
-      console.log('Device flow data:', deviceData);
-
-      // Step 2: Show user the verification URL and code
-      const userCode = deviceData.user_code;
-      const verificationUri = deviceData.verification_uri;
-      const deviceCode = deviceData.device_code;
-      const interval = deviceData.interval || 5;
-
-      // Open GitHub authorization page
-      window.open(verificationUri, '_blank');
-      
-      // Show user the code they need to enter
-      alert(`Please enter this code on GitHub: ${userCode}\n\nThe authorization page should have opened in a new tab.`);
-
-      // Step 3: Poll for authorization
-      pollForAuthorization(clientId, deviceCode, interval);
-
-    } catch (error) {
-      console.error('Device flow error:', error);
-      alert('Failed to start GitHub authentication. Please try again.');
+  // Handle OAuth callback with authorization code
+  const handleCallback = async (code: string, state: string) => {
+    console.log('Handling OAuth callback...');
+    
+    // Verify state parameter for security
+    const storedState = sessionStorage.getItem('oauth_state');
+    if (state !== storedState) {
+      console.error('State parameter mismatch');
+      throw new Error('Invalid state parameter');
     }
+    
+    // Clear the stored state
+    sessionStorage.removeItem('oauth_state');
+    
+    // For a complete OAuth flow, we would need a backend to exchange
+    // the authorization code for an access token securely.
+    // Since we can't expose client_secret in frontend, we'll redirect to token input
+    
+    console.log('Authorization code received:', code);
+    alert('OAuth authorization successful! However, for security reasons in client-side apps, please use a Personal Access Token instead.\\n\\nGo to: GitHub Settings → Developer settings → Personal access tokens → Generate new token\\n\\nRequired scopes: repo, read:user, user:email');
+    
+    // Redirect back to main app
+    window.location.href = '/';
   };
 
-  const pollForAuthorization = async (clientId: string, deviceCode: string, interval: number) => {
-    const maxAttempts = 60; // 5 minutes max
-    let attempts = 0;
+  // Login with personal access token
+  const loginWithToken = async (token: string): Promise<void> => {
+    if (!token.trim()) {
+      throw new Error('Token is required');
+    }
 
-    const poll = async () => {
-      if (attempts >= maxAttempts) {
-        alert('Authorization timed out. Please try again.');
-        return;
-      }
-
-      attempts++;
-
-      try {
-        const tokenResponse = await fetch('https://github.com/login/oauth/access_token', {
-          method: 'POST',
-          headers: {
-            'Accept': 'application/json',
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            client_id: clientId,
-            device_code: deviceCode,
-            grant_type: 'urn:ietf:params:oauth:grant-type:device_code'
-          }),
-        });
-
-        const tokenData = await tokenResponse.json();
-        console.log('Token response:', tokenData);
-
-        if (tokenData.access_token) {
-          // Success! Store the token
-          localStorage.setItem('github_token', tokenData.access_token);
-          
-          // Initialize auth state
-          const octokitInstance = new Octokit({ auth: tokenData.access_token });
-          setOctokit(octokitInstance);
-          
-          try {
-            const userResponse = await octokitInstance.rest.users.getAuthenticated();
-            setUser(userResponse.data as User);
-            console.log('Successfully authenticated user:', userResponse.data.login);
-          } catch (userError) {
-            console.error('Error fetching user data:', userError);
-            alert('Authentication successful but failed to fetch user data.');
-          }
-          
-          return; // Stop polling
-        } else if (tokenData.error === 'authorization_pending') {
-          // User hasn't authorized yet, continue polling
-          setTimeout(poll, interval * 1000);
-        } else if (tokenData.error === 'slow_down') {
-          // Rate limited, increase interval
-          setTimeout(poll, (interval + 5) * 1000);
-        } else if (tokenData.error === 'expired_token') {
-          alert('Authorization code expired. Please try logging in again.');
-          return;
-        } else if (tokenData.error === 'access_denied') {
-          alert('Authorization denied. Please try logging in again.');
-          return;
-        } else {
-          console.error('Unexpected token response:', tokenData);
-          alert('Unexpected response from GitHub. Please try again.');
-          return;
-        }
-      } catch (error) {
-        console.error('Polling error:', error);
-        setTimeout(poll, interval * 1000);
-      }
-    };
-
-    poll();
+    setIsLoading(true);
+    
+    try {
+      // Test the token by creating Octokit instance and fetching user
+      const octokitInstance = new Octokit({ auth: token.trim() });
+      const response = await octokitInstance.rest.users.getAuthenticated();
+      
+      // If we get here, the token is valid
+      localStorage.setItem('github_token', token.trim());
+      setOctokit(octokitInstance);
+      setUser(response.data as User);
+      
+      console.log('Successfully authenticated with token:', response.data.login);
+    } catch (error) {
+      console.error('Token authentication failed:', error);
+      throw new Error('Invalid GitHub token. Please check your token and try again.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const logout = () => {
     localStorage.removeItem('github_token');
-    localStorage.removeItem('oauth_state');
+    sessionStorage.removeItem('oauth_state');
     setUser(null);
     setOctokit(null);
   };
@@ -222,6 +175,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     isLoading,
     setUser,
     setOctokit,
+    handleCallback,
+    loginWithToken,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

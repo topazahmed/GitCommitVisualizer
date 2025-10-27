@@ -1,10 +1,7 @@
 // Authentication components for login/logout UI
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import styled from 'styled-components';
 import { useAuth } from '../contexts/AuthContext';
-import { TokenInput } from './TokenInput';
-import { DeviceFlow } from './DeviceFlow';
-import { Octokit } from '@octokit/rest';
 
 const LoginContainer = styled.div`
   display: flex;
@@ -26,7 +23,74 @@ const LoginContainer = styled.div`
   }
 `;
 
-const LoginButton = styled.button`
+const Title = styled.h1`
+  font-size: 2.5rem;
+  margin-bottom: 1rem;
+  font-weight: 700;
+  
+  @media (max-width: 768px) {
+    font-size: 2rem;
+  }
+
+  @media (max-width: 480px) {
+    font-size: 1.75rem;
+  }
+`;
+
+const Subtitle = styled.p`
+  font-size: 1.2rem;
+  margin-bottom: 2rem;
+  opacity: 0.9;
+  max-width: 600px;
+  
+  @media (max-width: 768px) {
+    font-size: 1.1rem;
+  }
+
+  @media (max-width: 480px) {
+    font-size: 1rem;
+  }
+`;
+
+const AuthOptions = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+  max-width: 500px;
+  width: 100%;
+`;
+
+const TokenSection = styled.div`
+  background: rgba(255, 255, 255, 0.1);
+  padding: 2rem;
+  border-radius: 12px;
+  backdrop-filter: blur(10px);
+`;
+
+const TokenInput = styled.input`
+  width: 100%;
+  padding: 12px 16px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 6px;
+  font-size: 16px;
+  background: rgba(255, 255, 255, 0.9);
+  color: #333;
+  margin-bottom: 1rem;
+  min-height: 44px;
+  box-sizing: border-box;
+
+  &:focus {
+    outline: 2px solid #0969da;
+    outline-offset: 2px;
+    border-color: #0969da;
+  }
+
+  &::placeholder {
+    color: #666;
+  }
+`;
+
+const Button = styled.button`
   background: #333;
   color: white;
   border: none;
@@ -34,25 +98,56 @@ const LoginButton = styled.button`
   border-radius: 6px;
   font-size: 16px;
   cursor: pointer;
-  margin-top: 20px;
   transition: background 0.2s;
-  min-height: 44px; /* Touch-friendly */
+  min-height: 44px;
   min-width: 120px;
 
   &:hover {
     background: #555;
   }
 
-  @media (max-width: 768px) {
-    padding: 14px 20px;
-    font-size: 16px;
-    width: 100%;
-    max-width: 300px;
+  &:disabled {
+    background: #666;
+    cursor: not-allowed;
   }
 
-  @media (max-width: 480px) {
-    padding: 12px 16px;
-    font-size: 15px;
+  @media (max-width: 768px) {
+    width: 100%;
+  }
+`;
+
+const OrDivider = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  opacity: 0.7;
+  
+  &::before,
+  &::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: rgba(255, 255, 255, 0.3);
+  }
+`;
+
+const OAuthSection = styled.div`
+  text-align: center;
+`;
+
+const HelpText = styled.div`
+  font-size: 0.9rem;
+  opacity: 0.8;
+  margin-top: 1rem;
+  line-height: 1.5;
+`;
+
+const Link = styled.a`
+  color: #fff;
+  text-decoration: underline;
+  
+  &:hover {
+    opacity: 0.8;
   }
 `;
 
@@ -106,157 +201,87 @@ const LogoutButton = styled.button`
 `;
 
 export const LoginPage: React.FC = () => {
-  const { setUser, setOctokit } = useAuth();
-  const [showTokenInput, setShowTokenInput] = useState(false);
-  const [deviceFlowData, setDeviceFlowData] = useState<any>(null);
+  const { login, loginWithToken } = useAuth();
+  const [token, setToken] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  // Check if we should use device flow (e.g., after CORS failure)
-  useEffect(() => {
-    const urlParams = new URLSearchParams(window.location.search);
-    if (urlParams.get('use_device_flow') === 'true') {
-      initiateDeviceFlow();
-      // Clean up URL
-      window.history.replaceState({}, '', window.location.pathname);
-    }
-  }, []);
-
-  const initiateDeviceFlow = async () => {
-    const clientId = process.env.REACT_APP_GITHUB_CLIENT_ID;
+  const handleTokenSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
     
-    if (!clientId) {
-      alert('GitHub Client ID not configured. Please check your .env file.');
+    if (!token.trim()) {
+      alert('Please enter a valid GitHub Personal Access Token');
       return;
     }
 
+    setLoading(true);
+    
     try {
-      console.log('Starting GitHub Device Flow...');
-      
-      const response = await fetch('https://github.com/login/device/code', {
-        method: 'POST',
-        headers: {
-          'Accept': 'application/json',
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          client_id: clientId,
-          scope: 'repo read:user user:email'
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error(`Device flow request failed: ${response.status}`);
-      }
-
-      const data = await response.json();
-      console.log('Device flow initiated successfully:', data);
-      setDeviceFlowData(data);
-
+      await loginWithToken(token);
+      // Success - user will be redirected by the auth context
     } catch (error) {
-      console.error('Device flow error:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      alert(`Failed to start device flow authentication: ${errorMessage}`);
+      console.error('Token authentication failed:', error);
+      alert(error instanceof Error ? error.message : 'Authentication failed');
+    } finally {
+      setLoading(false);
     }
   };
 
-  if (showTokenInput) {
-    return <TokenInput onBack={() => setShowTokenInput(false)} />;
-  }
-
-  if (deviceFlowData) {
-    return (
-      <DeviceFlow
-        userCode={deviceFlowData.user_code}
-        verificationUri={deviceFlowData.verification_uri}
-        deviceCode={deviceFlowData.device_code}
-        clientId={process.env.REACT_APP_GITHUB_CLIENT_ID || ''}
-        interval={deviceFlowData.interval || 5}
-        onCancel={() => setDeviceFlowData(null)}
-        onSuccess={async (token: string) => {
-          localStorage.setItem('github_token', token);
-          
-          // Initialize auth state
-          const octokitInstance = new Octokit({ auth: token });
-          setOctokit(octokitInstance);
-          
-          try {
-            const userResponse = await octokitInstance.rest.users.getAuthenticated();
-            setUser(userResponse.data as any);
-            console.log('Successfully authenticated user:', userResponse.data.login);
-          } catch (error) {
-            console.error('Error fetching user data:', error);
-            alert('Authentication successful but failed to fetch user data.');
-          }
-        }}
-      />
-    );
-  }
-
-  const handleLogin = () => {
-    const clientId = process.env.REACT_APP_GITHUB_CLIENT_ID;
-    
-    if (!clientId) {
-      alert('GitHub Client ID not configured. Please check your .env file.');
-      return;
-    }
-
-    // Use standard OAuth flow with redirect
-    const scope = 'repo read:user user:email';
-    const state = Math.random().toString(36).substring(7);
-    localStorage.setItem('oauth_state', state);
-    
-    const redirectUri = `${window.location.origin}/callback`;
-    const authUrl = `https://github.com/login/oauth/authorize?client_id=${clientId}&scope=${scope}&state=${state}&redirect_uri=${encodeURIComponent(redirectUri)}`;
-    
-    console.log('Redirecting to GitHub OAuth:', authUrl);
-    
-    // Direct redirect - this is the standard way
-    window.location.href = authUrl;
+  const handleOAuthLogin = () => {
+    login();
   };
 
   return (
     <LoginContainer>
-      <h1>GitHub Network Visualizer</h1>
-      <p>Visualize repository networks and commit graphs</p>
-      <p>Connect with GitHub to access your repositories</p>
-      
-      <LoginButton onClick={handleLogin}>
-        Sign in with GitHub
-      </LoginButton>
-      
-      <p style={{ 
-        marginTop: '16px', 
-        fontSize: '14px', 
-        color: '#586069',
-        textAlign: 'center'
-      }}>
-        <button
-          onClick={initiateDeviceFlow}
-          style={{ 
-            background: 'none', 
-            border: 'none', 
-            color: '#0366d6', 
-            cursor: 'pointer',
-            textDecoration: 'underline',
-            fontSize: '14px'
-          }}
-        >
-          Try Device Flow
-        </button>
-        {' '} or {' '}
-        <button
-          onClick={() => setShowTokenInput(true)}
-          style={{ 
-            background: 'none', 
-            border: 'none', 
-            color: '#0366d6', 
-            cursor: 'pointer',
-            textDecoration: 'underline',
-            fontSize: '14px'
-          }}
-        >
-          use a Personal Access Token
-        </button>
-      </p>
+      <Title>🌐 GitHub Network Visualizer</Title>
+      <Subtitle>
+        Visualize and explore Git repository networks, commits, and contributor relationships
+      </Subtitle>
+
+      <AuthOptions>
+        <TokenSection>
+          <h3 style={{ marginTop: 0, marginBottom: '1rem' }}>
+            🔑 Personal Access Token (Recommended)
+          </h3>
+          <form onSubmit={handleTokenSubmit}>
+            <TokenInput
+              type="password"
+              placeholder="ghp_xxxxxxxxxxxxxxxxxxxx"
+              value={token}
+              onChange={(e) => setToken(e.target.value)}
+              disabled={loading}
+            />
+            <Button type="submit" disabled={loading || !token.trim()}>
+              {loading ? '🔄 Authenticating...' : '🚀 Login with Token'}
+            </Button>
+          </form>
+          <HelpText>
+            Create a token at{' '}
+            <Link 
+              href="https://github.com/settings/tokens/new" 
+              target="_blank" 
+              rel="noopener noreferrer"
+            >
+              GitHub Settings
+            </Link>
+            <br />
+            Required scopes: <code>repo</code>, <code>read:user</code>, <code>user:email</code>
+          </HelpText>
+        </TokenSection>
+
+        <OrDivider>
+          <span>OR</span>
+        </OrDivider>
+
+        <OAuthSection>
+          <h3 style={{ marginBottom: '1rem' }}>🔗 OAuth Login</h3>
+          <Button onClick={handleOAuthLogin}>
+            Login with GitHub OAuth
+          </Button>
+          <HelpText>
+            Uses GitHub's standard OAuth flow. You'll be redirected to GitHub to authorize the app.
+          </HelpText>
+        </OAuthSection>
+      </AuthOptions>
     </LoginContainer>
   );
 };
@@ -268,7 +293,7 @@ export const UserProfile: React.FC = () => {
 
   return (
     <UserInfo>
-      <Avatar src={user.avatar_url} alt={user.name || user.login} />
+      <Avatar src={user.avatar_url} alt={user.login} />
       <span>{user.name || user.login}</span>
       <LogoutButton onClick={logout}>Logout</LogoutButton>
     </UserInfo>
