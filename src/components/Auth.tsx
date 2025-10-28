@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import styled from 'styled-components';
 import { useAuth } from '../contexts/AuthContext';
+import { PublicRepoInput } from './PublicRepoInput';
 
 const LoginContainer = styled.div`
   display: flex;
@@ -200,10 +201,13 @@ const LogoutButton = styled.button`
   }
 `;
 
-export const LoginPage: React.FC = () => {
+export const LoginPage: React.FC<{ onPublicRepoAccess?: (owner: string, repo: string) => void }> = ({ 
+  onPublicRepoAccess 
+}) => {
   const { login, loginWithToken } = useAuth();
   const [token, setToken] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showPublicMode, setShowPublicMode] = useState(false);
 
   const handleTokenSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -229,6 +233,37 @@ export const LoginPage: React.FC = () => {
   const handleOAuthLogin = () => {
     login();
   };
+
+  const handlePublicRepoAccess = (owner: string, repo: string) => {
+    // Navigate to the repository view
+    if (onPublicRepoAccess) {
+      onPublicRepoAccess(owner, repo);
+    } else {
+      console.log('Accessing public repository:', owner, repo);
+    }
+  };
+
+  if (showPublicMode) {
+    return (
+      <LoginContainer>
+        <Title>🌐 GitHub Network Visualizer</Title>
+        <Subtitle>
+          Explore public repositories without authentication
+        </Subtitle>
+        
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', maxWidth: '500px', width: '100%' }}>
+          <PublicRepoInput onRepoAccess={handlePublicRepoAccess} />
+          
+          <Button 
+            onClick={() => setShowPublicMode(false)}
+            style={{ background: 'rgba(255, 255, 255, 0.2)' }}
+          >
+            ← Back to Login Options
+          </Button>
+        </div>
+      </LoginContainer>
+    );
+  }
 
   return (
     <LoginContainer>
@@ -279,6 +314,24 @@ export const LoginPage: React.FC = () => {
           </Button>
           <HelpText>
             Uses GitHub's standard OAuth flow. You'll be redirected to GitHub to authorize the app.
+          </HelpText>
+        </OAuthSection>
+
+        <OrDivider>
+          <span>OR</span>
+        </OrDivider>
+
+        <OAuthSection>
+          <h3 style={{ marginBottom: '1rem' }}>🌍 Explore Public Repositories</h3>
+          <Button 
+            onClick={() => setShowPublicMode(true)}
+            style={{ background: '#28a745' }}
+          >
+            Browse Public Repos
+          </Button>
+          <HelpText>
+            Visualize any public GitHub repository without logging in. 
+            Perfect for exploring open source projects!
           </HelpText>
         </OAuthSection>
       </AuthOptions>

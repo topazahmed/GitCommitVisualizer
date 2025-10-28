@@ -19,6 +19,8 @@ interface AuthContextType {
   setOctokit: (octokit: Octokit | null) => void;
   handleCallback: (code: string, state: string) => Promise<void>;
   loginWithToken: (token: string) => Promise<void>;
+  accessPublicRepo: (repoUrl: string) => Promise<{ owner: string; repo: string }>;
+  isPublicMode: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -39,6 +41,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [octokit, setOctokit] = useState<Octokit | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isPublicMode, setIsPublicMode] = useState(false);
 
   useEffect(() => {
     console.log('AuthProvider: Checking authentication state...');
@@ -157,6 +160,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       localStorage.setItem('github_token', token.trim());
       setOctokit(octokitInstance);
       setUser(response.data as User);
+      setIsPublicMode(false);
       
       console.log('Successfully authenticated with token:', response.data.login);
     } catch (error) {
@@ -167,11 +171,64 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
+  // Access public repository without authentication
+  const accessPublicRepo = async (repoUrl: string): Promise<{ owner: string; repo: string }> => {
+    console.log('Accessing public repository:', repoUrl);
+    
+    // Parse GitHub URL to extract owner and repo
+    const { owner, repo } = parseGitHubUrl(repoUrl);
+    
+    setIsLoading(true);
+    
+    try {
+      // Create unauthenticated Octokit instance for public repos
+      const publicOctokit = new Octokit();
+      
+      // Test access by fetching repository info
+      await publicOctokit.rest.repos.get({ owner, repo });
+      
+      // If we get here, the repository is accessible
+      setOctokit(publicOctokit);
+      setUser(null); // No user in public mode
+      setIsPublicMode(true);
+      
+      console.log('Successfully accessed public repository:', `${owner}/${repo}`);
+      return { owner, repo };
+    } catch (error) {
+      console.error('Public repository access failed:', error);
+      throw new Error(`Unable to access repository ${owner}/${repo}. Please check that the repository exists and is public.`);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Parse GitHub URL to extract owner and repository name
+  const parseGitHubUrl = (url: string): { owner: string; repo: string } => {
+    // Remove trailing slash and .git extension
+    const cleanUrl = url.replace(/\/$/, '').replace(/\.git$/, '');
+    
+    // Match GitHub URLs in various formats
+    const patterns = [
+      /github\.com\/([^/]+)\/([^/]+)/,  // https://github.com/owner/repo
+      /^([^/]+)\/([^/]+)$/,             // owner/repo
+    ];
+    
+    for (const pattern of patterns) {
+      const match = cleanUrl.match(pattern);
+      if (match) {
+        return { owner: match[1], repo: match[2] };
+      }
+    }
+    
+    throw new Error('Invalid GitHub URL. Please provide a valid GitHub repository URL (e.g., https://github.com/owner/repo or owner/repo)');
+  };
+
   const logout = () => {
     localStorage.removeItem('github_token');
     sessionStorage.removeItem('oauth_state');
     setUser(null);
     setOctokit(null);
+    setIsPublicMode(false);
   };
 
   const value: AuthContextType = {
@@ -184,6 +241,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     setOctokit,
     handleCallback,
     loginWithToken,
+    accessPublicRepo,
+    isPublicMode,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

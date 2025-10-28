@@ -4,6 +4,7 @@ import styled from 'styled-components';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { ApiProvider, useApi } from './contexts/ApiContext';
 import { LoginPage, UserProfile } from './components/Auth';
+import { PublicRepoInput } from './components/PublicRepoInput';
 import OAuthCallback from './components/OAuthCallback';
 import { RepositorySelector } from './components/RepositorySelector';
 import { ResponsiveNetworkView } from './components/ResponsiveNetworkView';
@@ -204,7 +205,7 @@ const BackButton = styled.button`
 `;
 
 const MainApp: React.FC = () => {
-  const { user, isLoading: authLoading } = useAuth();
+  const { user, isLoading: authLoading, isPublicMode } = useAuth();
   const { apiClient } = useApi();
   const [selectedRepository, setSelectedRepository] = useState<Repository | null>(null);
   const [networkData, setNetworkData] = useState<NetworkData | null>(null);
@@ -239,6 +240,46 @@ const MainApp: React.FC = () => {
     setError(null);
   };
 
+  const handlePublicRepoAccess = async (owner: string, repo: string) => {
+    if (!apiClient) return;
+
+    setLoading(true);
+    setError(null);
+    setNetworkData(null);
+
+    try {
+      // Create a mock repository object for public repos
+      const mockRepo: Repository = {
+        id: 0,
+        name: repo,
+        full_name: `${owner}/${repo}`,
+        description: null,
+        private: false,
+        fork: false,
+        created_at: '',
+        updated_at: '',
+        pushed_at: '',
+        stargazers_count: 0,
+        watchers_count: 0,
+        forks_count: 0,
+        default_branch: 'main',
+        owner: {
+          login: owner,
+          avatar_url: `https://github.com/${owner}.png`
+        }
+      };
+
+      setSelectedRepository(mockRepo);
+      const data = await apiClient.getNetworkData(owner, repo);
+      setNetworkData(data);
+    } catch (err) {
+      setError(`Failed to load network data for ${owner}/${repo}. Please check that the repository exists and is public.`);
+      console.error('Error fetching public network data:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   if (authLoading) {
     return (
       <AppContainer>
@@ -247,10 +288,10 @@ const MainApp: React.FC = () => {
     );
   }
 
-  if (!user) {
+  if (!user && !isPublicMode) {
     return (
       <AppContainer>
-        <LoginPage />
+        <LoginPage onPublicRepoAccess={handlePublicRepoAccess} />
       </AppContainer>
     );
   }
@@ -258,8 +299,12 @@ const MainApp: React.FC = () => {
   return (
     <AppContainer>
       <Header>
-        <Logo>GitHub Network Visualizer</Logo>
-        <UserProfile />
+        <Logo>GitHub Network Visualizer{isPublicMode ? ' (Public Mode)' : ''}</Logo>
+        {user ? <UserProfile /> : (
+          <div style={{ fontSize: '14px', opacity: 0.8 }}>
+            Exploring public repositories
+          </div>
+        )}
       </Header>
       
       <Main>
@@ -286,10 +331,14 @@ const MainApp: React.FC = () => {
         {error && <ErrorMessage>{error}</ErrorMessage>}
 
         {!selectedRepository ? (
-          <RepositorySelector
-            onSelectRepository={handleSelectRepository}
-            selectedRepository={selectedRepository || undefined}
-          />
+          isPublicMode ? (
+            <PublicRepoInput onRepoAccess={handlePublicRepoAccess} />
+          ) : (
+            <RepositorySelector
+              onSelectRepository={handleSelectRepository}
+              selectedRepository={selectedRepository || undefined}
+            />
+          )
         ) : loading ? (
           <LoadingSpinner>Loading network data...</LoadingSpinner>
         ) : networkData ? (
